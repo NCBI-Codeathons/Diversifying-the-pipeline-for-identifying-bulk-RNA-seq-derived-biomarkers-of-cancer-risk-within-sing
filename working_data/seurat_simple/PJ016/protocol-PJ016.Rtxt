@@ -1,0 +1,83 @@
+# R350
+
+# Input counts matrix was pre-filtered to retain only first occurrence of each gene.
+
+library(Seurat);   # v3.1.2
+library(ggplot2);  # v3.2.1
+library(MAST);
+library(dplyr);
+
+datafile="../data/PJ016.counts_matrix.dedup.txt";
+data=read.delim(datafile, header=TRUE, row.names=1);
+Cells<-CreateSeuratObject(data, "PJ016");
+
+png("PJ016.violin-nCount_nFeature.png", h=400, w=600, res=100);
+VlnPlot(Cells,c('nCount_RNA','nFeature_RNA'), pt.size = 0);
+dev.off();
+
+### Fish out gene names for mito, ribosomal protein, & hemoglobin genes.
+### Calculate the % of counts that are assigned to mito, ribosomal protein, & hemoglobin genes.
+### QC plot: View distribution of % of counts assigned to mito, ribosomal, & hemoglobin genes.
+mt_genes<-union(grep("^mt",rownames(Cells),value = T),grep("^MT-",rownames(Cells),value = T));
+rp_genes<-union(union(grep("^Rpl",rownames(Cells),value = T),grep("^Rps",rownames(Cells),value = T)),union(grep("^RPL",rownames(Cells),value = T),grep("^RPS",rownames(Cells),value = T)));
+hg_genes<-union(grep("^Hb.-",rownames(Cells),value = T),grep("^HB",rownames(Cells),value = T));
+Cells$percent.mt <- 100*Matrix::colSums(GetAssayData(Cells,'counts')[mt_genes,])/Matrix::colSums(GetAssayData(Cells,'counts'));
+Cells$percent.rp <- 100*Matrix::colSums(GetAssayData(Cells,'counts')[rp_genes,])/Matrix::colSums(GetAssayData(Cells,'counts'));
+Cells$percent.hg <- 100*Matrix::colSums(GetAssayData(Cells,'counts')[hg_genes,])/Matrix::colSums(GetAssayData(Cells,'counts'));
+png("PJ016.violin-mito_ribo_hg.png", h=400, w=800, res=100);
+VlnPlot(Cells, c("percent.mt","percent.rp","percent.hg"), pt.size = 0);
+dev.off();
+
+### Normalize.  Regress out effects of mito content.
+Cells <- SCTransform(Cells, vars.to.regress=c("percent.mt"), assay="RNA", return.only.var.genes = FALSE);
+
+### Generate initial UMAP view.
+Cells <- RunPCA(Cells, npcs = 110);
+Cells <- RunUMAP(Cells, dims=1:25, n.components=2, reduction='pca', reduction.name='umap');
+png("PJ016.UMAP-inital_view.png", h=500, w=500, res=100);
+DimPlot(Cells, pt.size=1, reduction = 'umap');
+dev.off();
+
+### Clustering. Generate UMAP view with labeled clusters.
+Cells <- FindNeighbors(Cells, reduction='pca', dims=1:25, k.param=10);
+Cells <- FindClusters(Cells, resolution=0.7);
+png("PJ016.UMAP-byClusters.png", h=500, w=500, res=100);
+DimPlot(Cells, pt.size=1, label=T, reduction='umap'); #+NoLegend();
+dev.off();
+
+### Check distribution of gene counts, %mito, %hemoglobin by cluster. 
+png("PJ016.violin-pctMito-byClusters.png", h=400, w=800, res=100);
+VlnPlot(Cells, "percent.mt", pt.size=0);
+dev.off();
+png("PJ016.violin-pctHG-byClusters.png", h=400, w=800, res=100);
+VlnPlot(Cells, "percent.hg", pt.size=0);
+dev.off();
+png("PJ016.violin-geneCts-byClusters.png", h=400, w=800, res=100);
+VlnPlot(Cells, "nCount_RNA", pt.size = 0, log=T);
+dev.off();
+
+
+### Identify marker genes.
+marks<-FindAllMarkers(Cells, test.use='MAST', latent.vars=c("percent.mt"), only.pos=FALSE);
+write.table(file="PJ016.Marks.all.txt", x=as.matrix(marks), quote=F, append=F, col.names=NA, sep="\t");
+marksF<-subset(marks, p_val_adj<0.01);
+write.table(file="PJ016.Marks.adjp_0.01.txt", x=as.matrix(marksF), quote=F, append=F, col.names=NA, sep="\t");
+marksTop5 = marksF %>% group_by(cluster) %>% top_n(n=5, wt=avg_logFC);
+write.table(file="PJ016.Marks.Top5-seurat_filter.txt", x=as.matrix(marksTop5), quote=F, append=F, col.names=NA, sep="\t");
+
+
+### Other stuff we might want...
+
+### Calculate average expression per cluster (per gene).
+AvgExpr=AverageExpression(Cells);
+write.table(file="PJ016.AvgExpr.byCluster.txt", x=as.matrix(AvgExpr$SCT), quote=F, append=F, col.names=NA, sep="\t");
+
+### Output assigned cluster.
+write.table(file="PJ016.AssignedCluster.txt", x=as.matrix(Cells@active.ident), quote=F, append=F, col.names=F, sep="\t");
+
+### Output UMAP coordinates.
+write.table(file="PJ016.UMAP_coordinates.txt", x=as.matrix(Cells@reductions$umap@cell.embeddings), quote=F, append=F, col.names=F, sep="\t");
+
+
+save.image(file="PJ016.scRNA.RData");
+
