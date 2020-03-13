@@ -21,7 +21,7 @@ For each tumor sample, run Seurat to extract the following:  normalized read cou
 
 Step 2:  Process inferCNV data.
 
-(Thanks to Matt B for providing inferCNV outputs for each of the 8 tumor samples.) From the ~.observations.txt and ~.references.txt files output from inferCNV, the summed and average |locusScore-medianScore| were calculated over all available loci to provide aggregate CNV metrics per cell.
+(Thanks to Matt B for providing inferCNV outputs for each of the 8 tumor samples using [InferCNV](https://github.com/broadinstitute/inferCNV/wiki).) From the ~.observations.txt and ~.references.txt files output from inferCNV, the summed and average |locusScore-medianScore| were calculated over all available loci to provide aggregate CNV metrics per cell.
 ```
   id = samples[S];
   txtfile=paste(id, ".aggr_medianDelta_per_cell.txt", sep="");
