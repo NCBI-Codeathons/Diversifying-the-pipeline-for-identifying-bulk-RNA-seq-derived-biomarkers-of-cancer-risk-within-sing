@@ -21,7 +21,40 @@ For each tumor sample, run Seurat to extract the following:  normalized read cou
 
 Step 2:  Process inferCNV data.
 
-Thanks to Matt B for providing inferCNV outputs for each of the 8 tumor samples.
+(Thanks to Matt B for providing inferCNV outputs for each of the 8 tumor samples.) From the ~.observations.txt and ~.references.txt files output from inferCNV, the summed and average |locusScore-medianScore| were calculated over all available loci to provide aggregate CNV metrics per cell.
+```
+  id = samples[S];
+  txtfile=paste(id, ".aggr_medianDelta_per_cell.txt", sep="");
+  out=paste("cellID", "cellGroup", "aggregate", "locusCt", "median", sep="\t");
+  write.table(out, file=txtfile, sep="\t", quote=F, append=FALSE, row.names=F, col.names=F);
+  infileR=paste(id, ".infercnv.references.txt", sep="");
+  dataR=read.delim(infileR, header=TRUE, row.names=1);
+  nC=ncol(dataR);  # cells
+  nL=nrow(dataR);  # loci
+  medianR=median(unlist(dataR));
+  for (N in 1:nC) {
+    dd=dataR[,N];
+    delta=abs(dd-medianR);
+    deltaSum=sum(delta);
+    thiscell=colnames(dataR)[N];
+    out=paste(thiscell, "reference", deltaSum, nL, medianR, sep="\t");
+    write.table(out, file=txtfile, sep="\t", quote=F, append=TRUE, row.names=F, col.names=F);
+  }
+  infileT=paste(id, ".infercnv.observations.txt", sep="");
+  dataT=read.delim(infileT, header=TRUE, row.names=1);
+  nC=ncol(dataT);  # cells
+  nL=nrow(dataT);  # loci
+  medianT=median(unlist(dataT));
+  for (N in 1:nC) {
+    dd=dataT[,N];
+    delta=abs(dd-medianT);
+    deltaSum=sum(delta);
+    thiscell=colnames(dataT)[N];
+    out=paste(thiscell, "sample", deltaSum, nL, medianT, sep="\t");
+    write.table(out, file=txtfile, sep="\t", quote=F, append=TRUE, row.names=F, col.names=F);
+  }
+```
+
 
 
 
