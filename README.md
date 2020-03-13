@@ -106,7 +106,9 @@ blue: malignant
 
 ## Future Directions
 
-Moving forward, we would like to add gene set enrichment analysis to use enriched gene sets for consistent with the caner phenotype, including proliferation and developmental pathways. This would provide a more rigorous statistical score for each cluster as opposed to the proliferation score currently used. Furthermore, testing other tools for annotating gene clusters with their respective cell types would aid in identifying non-malignant clusters.
+- Moving forward, we would like to add gene set enrichment analysis to use enriched gene sets for consistent with the caner phenotype, including proliferation and developmental pathways. This would provide a more rigorous statistical score for each cluster as opposed to the proliferation score currently used.
+- Furthermore, testing other tools for annotating gene clusters with their respective cell types would aid in identifying non-malignant clusters.
+- Examine specific genes for abnormal CNV from the inferred CNV data (TP53, MDM2, RTK, RAS, PI3K, RB, CDK4)
 
 ## Dependencies
 - Seurat
