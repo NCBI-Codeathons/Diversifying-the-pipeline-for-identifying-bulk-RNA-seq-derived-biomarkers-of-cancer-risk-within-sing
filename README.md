@@ -1,6 +1,6 @@
 # Diversifying the pipeline for identifying bulk RNA-seq derived biomarkers of cancer within single cell populations
 
-Hackathon team: Sara Grimm, Jason Wang, Miko Liu, Matt Bernstein
+*__Hackathon team: Sara Grimm, Jason Wang, Miko Liu, Matt Bernstein__*
 
 ## Background and Objective
 Previous work by Matt Bernstein (and others) explored scRNA-seq data of 8 high-grade glioma tumor samples from "Single-cell transcriptome analysis of lineage diversity in high-grade glioma" by Yuan et al (PMID: 30041684). See [paper](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-018-0567-9) and [repository](https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations) for their results.  
