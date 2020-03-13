@@ -100,7 +100,7 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 
 ## Additional Visualizations  
 
-## Cell clustering with heatmap of top differentially expressed genes
+## Annotation of cell clusters using PlangaoDB
 ![image](https://user-images.githubusercontent.com/46359281/76651763-8d84fc00-653b-11ea-9300-b06bd366bc3c.png)  
 ## Cells with aggregate inferCNV score in range of reference (assumed non-malignant (red)) cells.
 ![image](https://user-images.githubusercontent.com/46359281/76653076-5ebc5500-653e-11ea-84d8-ca3fc856294e.png)  
