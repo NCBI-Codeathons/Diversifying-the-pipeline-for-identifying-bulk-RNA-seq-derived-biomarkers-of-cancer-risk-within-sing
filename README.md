@@ -95,6 +95,7 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 ![PJ048 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648675-81963b80-6535-11ea-8b7e-41eb5411fe57.png)![UMAP_proliferation_PJ048](https://user-images.githubusercontent.com/46359281/76648211-a2aa5c80-6534-11ea-8484-35f661fc2699.png)
 
 ## Additional plots  
+![image](https://user-images.githubusercontent.com/46359281/76651763-8d84fc00-653b-11ea-9300-b06bd366bc3c.png)  
 ![biomarker_expression-SOX2](https://user-images.githubusercontent.com/46359281/76650803-b60bf680-6539-11ea-9990-ad2af685d789.png)
 
 
