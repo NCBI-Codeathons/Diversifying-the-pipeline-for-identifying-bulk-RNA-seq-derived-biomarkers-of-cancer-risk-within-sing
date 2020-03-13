@@ -10,7 +10,9 @@ Our primary objective is to extend their analysis by developing a method to stra
 We also hoped to (a) identify gene markers or gene sets correlated with malignancy status, and (b) associate specific cell types from clustered scRNA-seq data with malignancy status.  Unfortunately, despite several attempted methods, we were not successful in these endeavors.
 
 
-## Workflow
+## Workflow  
+![image](https://user-images.githubusercontent.com/46359281/76649230-9de6a800-6536-11ea-9458-55a6e5440f0c.png)
+
 
 ## screenshot examples and output
 ![PJ016 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648676-81963b80-6535-11ea-808e-295a022e9360.png)![UMAP_proliferation_PJ016](https://user-images.githubusercontent.com/46359281/76647682-a8ec0900-6533-11ea-9ecc-8ffc142e61a1.png)  
