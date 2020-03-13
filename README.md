@@ -17,8 +17,9 @@ We also hoped to (a) identify gene markers or gene sets correlated with malignan
 
 ![PJ017 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648677-81963b80-6535-11ea-878e-51725a7b53f4.png)![UMAP_proliferation_PJ017](https://user-images.githubusercontent.com/46359281/76648202-a211c600-6534-11ea-9481-16b5151bae1f.png)  
 
-![UMAP_proliferation_PJ018](https://user-images.githubusercontent.com/46359281/76648204-a211c600-6534-11ea-899e-a069f6c5455c.png)
-![UMAP_proliferation_PJ025](https://user-images.githubusercontent.com/46359281/76648205-a211c600-6534-11ea-90e8-cadd1a8d6d59.png)![PJ025-incomplete UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648669-80fda500-6535-11ea-817a-39d87fc9acd0.png)  
+![UMAP_proliferation_PJ018](https://user-images.githubusercontent.com/46359281/76648204-a211c600-6534-11ea-899e-a069f6c5455c.png)![PJ018 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648679-822ed200-6535-11ea-8cd2-fd8a74857478.png)  
+
+![PJ025 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648681-822ed200-6535-11ea-8e6e-5907a6940e08.png)![UMAP_proliferation_PJ025](https://user-images.githubusercontent.com/46359281/76648205-a211c600-6534-11ea-90e8-cadd1a8d6d59.png)  
 
 ![PJ030 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648671-80fda500-6535-11ea-878a-5d09d8f85636.png)![UMAP_proliferation_PJ030](https://user-images.githubusercontent.com/46359281/76648207-a211c600-6534-11ea-8cd8-bf939087f68d.png)  
 
@@ -31,8 +32,8 @@ We also hoped to (a) identify gene markers or gene sets correlated with malignan
 
 
 
-![PJ018 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648679-822ed200-6535-11ea-8cd2-fd8a74857478.png)
-![PJ025 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648681-822ed200-6535-11ea-8e6e-5907a6940e08.png)
+
+
 
 ## future directions
 
