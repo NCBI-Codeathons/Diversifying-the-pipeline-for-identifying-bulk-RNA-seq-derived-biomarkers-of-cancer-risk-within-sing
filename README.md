@@ -10,8 +10,19 @@ Our primary objective is to extend their analysis by developing a method to stra
 We also hoped to (a) identify gene markers or gene sets correlated with malignancy status, and (b) associate specific cell types from clustered scRNA-seq data with malignancy status.  Unfortunately, despite several attempted methods, we were not successful in these endeavors.
 
 
-## Workflow  
-![image](https://user-images.githubusercontent.com/46359281/76649230-9de6a800-6536-11ea-9458-55a6e5440f0c.png)
+## Workflow
+
+
+## Workflow Steps and Code Bits
+Step 1:  Seurat
+
+For each tumor sample, run Seurat to extract the following:  normalized read counts (SCT) per gene per cell, assigned cluster per cell, UMAP coordinates, average expression per gene per cluster, and marker genes per cluster.  The R workflow using Seurat can be found at working_data/seurat_simple/{sampleID}/protocol-{sampleID}.Rtxt
+
+Step 2:  Process inferCNV data.
+
+Thanks to Matt B for providing inferCNV outputs for each of the 8 tumor samples.
+
+
 
 
 ## screenshot examples and output
