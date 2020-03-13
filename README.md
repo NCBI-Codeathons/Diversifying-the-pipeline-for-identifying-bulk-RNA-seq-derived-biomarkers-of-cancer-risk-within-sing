@@ -100,7 +100,8 @@ blue: malignant
 
 ## Additional plots  
 ![image](https://user-images.githubusercontent.com/46359281/76651763-8d84fc00-653b-11ea-9300-b06bd366bc3c.png)  
-![biomarker_expression-SOX2](https://user-images.githubusercontent.com/46359281/76650803-b60bf680-6539-11ea-9990-ad2af685d789.png)
+![biomarker_expression-SOX2](https://user-images.githubusercontent.com/46359281/76650803-b60bf680-6539-11ea-9990-ad2af685d789.png) ![biomarker_expression-OLIG2](https://user-images.githubusercontent.com/46359281/76652567-3a13ad80-653d-11ea-87a8-d4871adf57f0.png)
+
 
 
 ## Future Directions
@@ -115,6 +116,3 @@ Moving forward, we would like to add gene set enrichment analysis to use enriche
 Find the scRNA-seq data and inferred copy number variant data in input/data. Within working_data, several visualizations have been generated from the scRNA-Seq UMAPs mapping inferred CNV onto the sRNA-Seq UMAPs (umap_color_by_inferCNV_rank, umap_color_by_inferCNV_assumedNonMalignant), proliferation score, and biomarker expression.
 
 
-
-
-building on : 
