@@ -88,11 +88,11 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 
 ![PJ030 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648671-80fda500-6535-11ea-878a-5d09d8f85636.png)![UMAP_proliferation_PJ030](https://user-images.githubusercontent.com/46359281/76648207-a211c600-6534-11ea-8cd8-bf939087f68d.png)  
 
-![UMAP_proliferation_PJ032](https://user-images.githubusercontent.com/46359281/76648209-a211c600-6534-11ea-909e-3f8ecb604f17.png)![PJ032 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648672-80fda500-6535-11ea-8ac2-e973d972d973.png)  
+[PJ032 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648672-80fda500-6535-11ea-8ac2-e973d972d973.png)![UMAP_proliferation_PJ032](https://user-images.githubusercontent.com/46359281/76648209-a211c600-6534-11ea-909e-3f8ecb604f17.png)!  
 
-![UMAP_proliferation_PJ035](https://user-images.githubusercontent.com/46359281/76648210-a2aa5c80-6534-11ea-866c-150849da5fe5.png)  ![PJ035 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648674-81963b80-6535-11ea-8630-e27917f0fb12.png)
+![PJ035 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648674-81963b80-6535-11ea-8630-e27917f0fb12.png)![UMAP_proliferation_PJ035](https://user-images.githubusercontent.com/46359281/76648210-a2aa5c80-6534-11ea-866c-150849da5fe5.png)  
 
-![UMAP_proliferation_PJ048](https://user-images.githubusercontent.com/46359281/76648211-a2aa5c80-6534-11ea-8484-35f661fc2699.png)![PJ048 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648675-81963b80-6535-11ea-8b7e-41eb5411fe57.png)
+![PJ048 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648675-81963b80-6535-11ea-8b7e-41eb5411fe57.png)![UMAP_proliferation_PJ048](https://user-images.githubusercontent.com/46359281/76648211-a2aa5c80-6534-11ea-8484-35f661fc2699.png)
 
 
 
@@ -105,9 +105,11 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 Moving forward, we would like to add gene set enrichment analysis to use enriched gene sets for consistent with the caner phenotype, including proliferation and developmental pathways. This would provide a more rigorous statistical score for each cluster as opposed to the proliferation score currently used. Furthermore, testing other tools for annotating gene clusters with their respective cell types would aid in identifying non-malignant clusters.
 
 ## Dependencies
+- Seurat
 
-## input and output
+## Input data  
 
+Find the scRNA-seq data and inferred copy number variant data in input/data. Within working_data, several visualizations have been generated from the scRNA-Seq UMAPs mapping inferred CNV onto the sRNA-Seq UMAPs (umap_color_by_inferCNV_rank, umap_color_by_inferCNV_assumedNonMalignant), proliferation score, and biomarker expression.
 
 
 
