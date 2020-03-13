@@ -80,7 +80,8 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 ## Screenshot Examples and Output  
 
 yellow: non-malignant
-blue: malignant 
+blue: malignant  
+
 ![PJ016 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648676-81963b80-6535-11ea-808e-295a022e9360.png)![UMAP_proliferation_PJ016](https://user-images.githubusercontent.com/46359281/76647682-a8ec0900-6533-11ea-9ecc-8ffc142e61a1.png)  
 
 ![PJ017 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648677-81963b80-6535-11ea-878e-51725a7b53f4.png)![UMAP_proliferation_PJ017](https://user-images.githubusercontent.com/46359281/76648202-a211c600-6534-11ea-9481-16b5151bae1f.png)  
