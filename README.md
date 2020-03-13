@@ -111,7 +111,7 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 
 ## Future Directions
 
-- Moving forward, we would like to add gene set enrichment analysis to use enriched gene sets for consistent with the caner phenotype, including proliferation and developmental pathways. This would provide a more rigorous statistical score for each cluster as opposed to the proliferation score currently used.
+- Moving forward, we would like to add gene set enrichment analysis to use enriched gene sets consistent with the caner phenotype, including proliferation and developmental pathways. This would provide a more rigorous statistical score for each cluster as opposed to the proliferation score currently used.
 - Furthermore, testing other tools for annotating gene clusters with their respective cell types would aid in identifying non-malignant clusters.
 - Examine specific genes for abnormal CNV from the inferred CNV data (TP53, MDM2, RTK, RAS, PI3K, RB, CDK4)
 - Use identified cancer cells on the scRNA-Seq dataset integrating all 8 donors to identify an improved boundary (such as using supporter vector machines) rather than the principal components 1 & 2 defined in the paper.
