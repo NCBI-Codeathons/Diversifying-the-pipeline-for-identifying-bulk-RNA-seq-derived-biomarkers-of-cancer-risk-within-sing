@@ -12,6 +12,7 @@ We also hoped to (a) identify gene markers or gene sets correlated with malignan
 
 ## Workflow
 
+![image](https://user-images.githubusercontent.com/46359281/76649230-9de6a800-6536-11ea-9458-55a6e5440f0c.png)
 
 ## Workflow Steps and Code Bits
 Step 1:  Seurat
