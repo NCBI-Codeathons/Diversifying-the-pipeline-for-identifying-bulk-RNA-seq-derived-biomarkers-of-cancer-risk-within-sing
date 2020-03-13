@@ -49,7 +49,9 @@ Thanks to Matt B for providing inferCNV outputs for each of the 8 tumor samples.
 
 
 
-## future directions
+## Future Directions
+
+Moving forward, we would like to add gene set enrichment analysis to use enriched gene sets for consistent with the caner phenotype, including proliferation and developmental pathways. This would provide a more rigorous statistical score for each cluster as opposed to the proliferation score currently used. Furthermore, testing other tools for annotating gene clusters with their respective cell types would aid in identifying non-malignant clusters.
 
 ## Dependencies
 
