@@ -99,6 +99,7 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 ![PJ048 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648675-81963b80-6535-11ea-8b7e-41eb5411fe57.png)![UMAP_proliferation_PJ048](https://user-images.githubusercontent.com/46359281/76648211-a2aa5c80-6534-11ea-8484-35f661fc2699.png)
 
 ## Additional Visualizations  
+
 ## Cell clustering with heatmap of top differentially expressed genes
 ![image](https://user-images.githubusercontent.com/46359281/76651763-8d84fc00-653b-11ea-9300-b06bd366bc3c.png)  
 ## Cells with aggregate inferCNV score in range of reference (assumed non-malignant (red)) cells.
