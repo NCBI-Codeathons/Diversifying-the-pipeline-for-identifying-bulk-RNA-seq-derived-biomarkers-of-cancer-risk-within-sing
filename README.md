@@ -1,4 +1,4 @@
-# Diversifying the pipeline for identifying bulk RNA-seq derived biomarkers of cancer within single cell populatins
+# Diversifying the pipeline for identifying bulk RNA-seq derived biomarkers of cancer within single cell populations
 
 Hackathon team: Sara Grimm, Jason Wang, Miko Liu, Matt Bernstein
 
@@ -55,7 +55,23 @@ Step 2:  Process inferCNV data.
   }
 ```
 
-
+Then the distribution of the average |locusScore-medianScore| results were plotted to see if the reference and tumor samples were different. (They are!) After repeating over the 8 tumors, we noted that the distribution of these scores in the reference cells are consistently below 0.02, so we are using this as the threshold for what we are confident(???) are non-malignant cells.  These plots can be viewed in working_data/inferCNV_distr.
+```
+  id = samples[S];
+  infile=paste(id, ".aggr_medianDelta_per_cell.txt", sep="");
+  data=read.delim(infile, header=TRUE);
+  ddR=subset(data, (data$cellGroup == "reference"));
+  ddS=subset(data, (data$cellGroup == "sample"));
+  loci=ddR[1,4];
+  xmin=0; xmax=0.08;
+  pngfile=paste(id, ".avg_medianDelta_per_cell.distr.png", sep="");
+  png(pngfile, h=500, w=500, res=120);
+  maintitle=paste(id, ": average |score-median|\n(", loci, " inferCNV loci)", sep="");
+  plot(density(ddR$aggregate/loci), lwd=2, col="black", main=maintitle, xlab="", xlim=c(xmin,xmax), ylim=c(0,yy[S]));
+  lines(density(ddS$aggregate/loci), lwd=2, col="limegreen");
+  legend("topright", c("reference","sample"), col=c("black","limegreen"), pch=20);
+  dev.off();
+```
 
 
 
