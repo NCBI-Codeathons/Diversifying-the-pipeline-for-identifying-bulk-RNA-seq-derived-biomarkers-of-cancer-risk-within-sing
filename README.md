@@ -73,7 +73,9 @@ Then the distribution of the average |locusScore-medianScore| results were plott
   dev.off();
 ```
 
+Step 3:  Combine Seurat cell cluster and inferCNV data.
 
+We then integrated the cell cluster assingments from Seurat with the aggregate inferCNV score we calculated, then visualized via UMAP to look at relative location of low/high CNV cells compared to cells with high expression of proliferation marker genes.
 
 ## Screenshot Examples and Output
 ![PJ016 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648676-81963b80-6535-11ea-808e-295a022e9360.png)![UMAP_proliferation_PJ016](https://user-images.githubusercontent.com/46359281/76647682-a8ec0900-6533-11ea-9ecc-8ffc142e61a1.png)  
