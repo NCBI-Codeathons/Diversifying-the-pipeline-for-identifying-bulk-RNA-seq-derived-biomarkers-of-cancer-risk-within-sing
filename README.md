@@ -3,7 +3,7 @@
 *__Hackathon team: Sara Grimm, Jason Wang, Miko Liu, Matt Bernstein__*
 
 ## Background and Objective
-Previous work by Matt Bernstein (and others) explored scRNA-seq data of 8 high-grade glioma tumor samples from "Single-cell transcriptome analysis of lineage diversity in high-grade glioma" by Yuan et al (PMID: 30041684). See [paper](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-018-0567-9) and [repository](https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations) for their results.  
+Previous work by Matt Bernstein (and others) explored scRNA-seq data of 8 high-grade glioma tumor samples from "Single-cell transcriptome analysis of lineage diversity in high-grade glioma" by Yuan et al (PMID: 30041684) [paper](https://genomemedicine.biomedcentral.com/articles/10.1186/s13073-018-0567-9). See  their [repository](https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations) for their results.  
 
 Our primary objective is to extend their analysis by developing a method to stratify cells in a given scRNA-seq dataset according to malignancy status. For this stratification we rely primarily on a CNV (copy number variation) metric.  
 
@@ -86,7 +86,7 @@ We then integrated the cell cluster assingments from Seurat with the aggregate i
 
 ![PJ017 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648677-81963b80-6535-11ea-878e-51725a7b53f4.png)![UMAP_proliferation_PJ017](https://user-images.githubusercontent.com/46359281/76648202-a211c600-6534-11ea-9481-16b5151bae1f.png)  
 
-![UMAP_proliferation_PJ018](https://user-images.githubusercontent.com/46359281/76648204-a211c600-6534-11ea-899e-a069f6c5455c.png)![PJ018 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648679-822ed200-6535-11ea-8cd2-fd8a74857478.png)  
+![PJ018 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648679-822ed200-6535-11ea-8cd2-fd8a74857478.png)![UMAP_proliferation_PJ018](https://user-images.githubusercontent.com/46359281/76648204-a211c600-6534-11ea-899e-a069f6c5455c.png)  
 
 ![PJ025 UMAP-byRankICNV](https://user-images.githubusercontent.com/46359281/76648681-822ed200-6535-11ea-8e6e-5907a6940e08.png)![UMAP_proliferation_PJ025](https://user-images.githubusercontent.com/46359281/76648205-a211c600-6534-11ea-90e8-cadd1a8d6d59.png)  
 
