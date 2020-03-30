@@ -79,6 +79,10 @@ head(go_ls[[4]])
 
 
 ```{r}
+
+require(scMappR)
+
+
 ```
 
 
