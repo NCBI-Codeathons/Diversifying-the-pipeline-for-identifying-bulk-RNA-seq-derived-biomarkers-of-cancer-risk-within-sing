@@ -1,0 +1,89 @@
+---
+title: "annotation"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Assignment using gene sets
+
+```{r}
+donors.integrated=readRDS("seurat-integrated.rds")
+
+```
+
+
+
+```{r}
+markers.mam <- findMarkers(donors.integrated, sce.mam$cluster, direction="up", lfc=1)
+
+#find markers for all clusters
+markers <- FindAllMarkers(donors.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 1)
+
+c1=markers[markers$cluster==1 & markers$p_val_adj<=.05]
+
+```
+
+You may need to map symbols from to entrez id for goana
+
+```{r mapping symbols to entrez for goana}
+require(org.Hs.eg.db)
+#keytypes(org.Hs.eg.db) #prints fields available for matching
+
+#keys: enter list of genes in the format specified in "keytype"
+#column: returned column field
+entrez=mapIds(org.Hs.eg.db,keys= "CCL3", keytype="SYMBOL", column=("ENTREZID"))
+
+```
+
+```{r}
+files <- list.files(pattern = "\\.txt$") #get list of txt files
+entrez=data.frame()
+
+batch_list=c("PJ16","PJ17","PJ30","PJ32")
+
+for (i in 1:length(files)){
+  
+  filen=files[i] #filename
+  batch=batch_list[i] #donor batch
+  
+  print(filen)
+  df=data.table::fread(filen) #read in text files containing count data
+  df=df[,1:2]
+  df=as.data.frame(df)
+
+  
+  entrez=rbind(entrez,df)
+  
+
+  
+  remove(df) #delete temporary var from memory
+}
+
+
+```
+
+```{r goana}
+#map symbols to entrez id for goana using DBi annotations
+
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+

@@ -1,0 +1,150 @@
+---
+title: "integration-seurat"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r ingest data and seurat object conversion} 
+
+sce.norm=readRDS("sce-objects-4.rds") #list of sce objects
+
+#convert to seurat for data integration
+seur.norm=lapply(sce.norm, as.Seurat)
+
+```
+
+
+```{r adding donor metadata to seurat object}
+batch_list=c("PJ16","PJ17","PJ30","PJ32")
+
+for( i in 1:length(batch_list)){
+current_donor= batch_list[i]
+  
+seur.norm[[i]]= AddMetaData(seur.norm[[i]], metadata=current_donor,col.name="donor")}
+#seur.nom is now a list of seurat objects from each donor
+```
+
+
+https://satijalab.org/seurat/v3.1/merge_vignette.html
+```{r generate anchors and batch-correct}
+
+#merging seurat objects isn't necessary, if you merge, you have to split again later anyway
+#merge produces a raw data matrix
+#add.cell.ids = appends parameters to the respective cell-names
+#seur.combined=merge(x=seur.norm[[1]],y=seur.norm[2:4],add.cell.ids=c("PJ16","PJ17","PJ30","PJ32"), project="donor")
+#donor.list <- SplitObject(seur.combined, split.by = "donor")
+#reference.list <- donor.list[batch_list] 
+
+#calculate anchors
+anchors <- FindIntegrationAnchors(object.list = seur.norm, dims = 1:30)
+
+#use anchors to generate new seurat object containing ASSAY with batch-corrected expression matrix
+donors.integrated=IntegrateData(anchorset = anchors,dims=1:30)
+#primary dataset is batch-corrected expression matrix
+#a second dataset is also stored, the uncorrected values are stored in assay- RNA
+
+```
+
+
+```{r dim reduction and visualization on corrected data}
+DefaultAssay(donors.integrated) <- "integrated"
+
+# Run the standard workflow for visualization and clustering
+donors.integrated <- ScaleData(donors.integrated, verbose = FALSE)
+donors.integrated <- RunPCA(donors.integrated, npcs = 30, verbose = FALSE)
+donors.integrated <- RunUMAP(donors.integrated, reduction = "pca", dims = 1:30)
+donors.integrated <- RunTSNE(donors.integrated, reduction = "pca", dims = 1:30)
+
+DimPlot(donors.integrated, reduction = "umap", group.by = "donor")
+#DimPlot(donors.integrated, reduction = "tsne", group.by = "donor") 
+
+```
+
+
+first dataset= reference
+additional datasets= queries
+
+use cluster labels from reference, to label queries
+```{r use }
+
+donors.query= seur.norm[[2]]
+donors.anchors <- FindTransferAnchors(reference = donors.integrated, query = donors.query, dims=1:30, project.query = T)
+
+```
+
+
+```{r defining clusters}
+donors.integrated <- FindNeighbors(donors.integrated, dims = 1:10) # generates KNN graph
+donors.integrated <- FindClusters(donors.integrated, resolution = 0.5) #louvain
+
+#clusters can be accessed using Idents()
+#cluster labels accessed via: levels(object)
+```
+
+
+```{r biomarkers for clusters }
+#find markers for all clusters
+integrated.markers <- FindAllMarkers(donors.integrated, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+
+topmarker=integrated.markers %>% group_by(cluster) %>% top_n(n = 1, wt = avg_logFC)
+```
+
+
+```{r visualizing clusters with markers}
+DimPlot(donors.integrated, reduction = "umap")
+
+#histogram for each cluster
+RidgePlot(donors.integrated,features=topmarker$gene[6:10])
+
+#dotplot: expression  + %age expressing 
+DotPlot(donors.integrated,features=topmarker$gene) + RotatedAxis()
+
+#Featureplot  #3d map with single gene heatmap
+
+
+#heatmap with cluster abels and selected genes
+DoHeatmap(donors.integrated, features = topmarker, size = 3)
+```
+
+```{r}
+topmarker$gene
+
+```
+
+pangload db
+
+cellmarker
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+saveRDS(donors.integrated,"seurat-integrated.rds")
+```
+
