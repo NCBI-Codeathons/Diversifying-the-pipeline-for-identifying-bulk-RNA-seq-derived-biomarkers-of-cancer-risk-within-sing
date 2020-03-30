@@ -78,18 +78,66 @@ head(go_ls[[4]])
 ```
 
 
-```{r}
 
+
+files downloaded from CellMarker database
+```{r loading cellmarker db markers}
+human_markers=read.table("Human_cell_markers.txt", sep='\t',header = TRUE)
+
+single_markers=read.table("Single_cell_markers.txt", sep='\t',header = TRUE)
+
+
+markers=read.table("cluster_markers.txt")
+```
+
+
+
+```{r checking for occurrence of db markers in biomarker genes}
+
+#matching based on human cell markers
+hmatch=merge(markers, human_markers[,c("tissueType","cellName","geneSymbol")],by.x="gene",by.y="geneSymbol") 
+
+#matching based on single cell markers
+
+
+```
+
+```{r checking for sc CM in biomarker genes}
+
+
+
+#matching based on human cell markers
+hmatch=merge(markers, human_markers[,c("tissueType","cellName","geneSymbol")],by.x="gene",by.y="geneSymbol") 
+
+#matching based on single cell markers
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Alternative to CellMarker database
+Use this package to access Cellmarker and Panglao db
+
+https://cran.r-project.org/web/packages/scMappR/scMappR.pdf
+```{r scmappr}
+#GSVA dependency may need to be installed separately
 require(scMappR)
 
 
-```
-
-
-```{r}
-```
-
-
-```{r}
+internal <- tissue_scMappR_custom(genes,Signature,output_directory = "scMappR_Test_custom", toSave = TRUE)
 ```
 
