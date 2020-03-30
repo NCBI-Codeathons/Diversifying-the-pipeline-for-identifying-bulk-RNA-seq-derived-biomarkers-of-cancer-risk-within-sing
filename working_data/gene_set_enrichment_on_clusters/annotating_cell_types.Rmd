@@ -34,45 +34,47 @@ require(org.Hs.eg.db)
 
 #keys: enter list of genes in the format specified in "keytype"
 #column: returned column field
-entrez=mapIds(org.Hs.eg.db,keys= "CCL3", keytype="SYMBOL", column=("ENTREZID"))
+entrez=mapIds(org.Hs.eg.db,keys= markers$gene, keytype="SYMBOL", column=("ENTREZID"))
+markers$entrez=entrez
+
+
+# number of cells in each cluster
+ordered_clust=markers %>% group_by(cluster) %>% count %>% arrange(desc(n))
+
+
 
 ```
 
-```{r}
-files <- list.files(pattern = "\\.txt$") #get list of txt files
-entrez=data.frame()
+```{r goana on 5 largest cell pops}
+#map symbols to entrez id for goana using DBi annotations
+require(limma)
+require(GO.db)
 
-batch_list=c("PJ16","PJ17","PJ30","PJ32")
+go_ls=list()
 
-for (i in 1:length(files)){
-  
-  filen=files[i] #filename
-  batch=batch_list[i] #donor batch
-  
-  print(filen)
-  df=data.table::fread(filen) #read in text files containing count data
-  df=df[,1:2]
-  df=as.data.frame(df)
+for (i in 1:dim(ordered_clust[1])){
 
-  
-  entrez=rbind(entrez,df)
-  
+#markers$ez=ent_symb$entrez
+c_markers=markers[(markers$cluster==ordered_clust$cluster[i]) & (markers$p_val_adj<=.05), ]
 
-  
-  remove(df) #delete temporary var from memory
+go.out <- goana(unique(c_markers$ez[!is.na(c_markers$ez)]), species="Hs",  universe=NULL)
+
+go.out <- go.out[order(go.out$P.DE),]
+#N: number of genes in gene set
+go.useful <- go.out[go.out$Ont=="BP" & go.out$N <= 200,]
+
+#names the list with the cluster number
+go_ls[[ordered_clust$cluster[i]]]=go.useful
+
+print(paste("GO on cluster:", ordered_clust$cluster[i]))
 }
 
-
 ```
 
-```{r goana}
-#map symbols to entrez id for goana using DBi annotations
+clusters 4,6,7,10,12
+```{r examine gene sets in each cluster}
+head(go_ls[[4]])
 
-
-```
-
-
-```{r}
 ```
 
 
