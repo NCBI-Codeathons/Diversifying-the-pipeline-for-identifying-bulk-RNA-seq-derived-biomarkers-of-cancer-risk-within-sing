@@ -10,16 +10,16 @@ knitr::opts_chunk$set(echo = TRUE)
 # Assignment using gene sets
 
 ```{r}
-donors.integrated=readRDS("seurat-integrated.rds")
+donors.integrated=readRDS("seurat-integrated-8.rds")
 
 ```
 
 
 
 ```{r}
-markers.mam <- findMarkers(donors.integrated, sce.mam$cluster, direction="up", lfc=1)
+#markers.mam <- findMarkers(donors.integrated, sce.mam$cluster, direction="up", lfc=1)
 
-#find markers for all clusters
+#find positive markers for all clusters
 markers <- FindAllMarkers(donors.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 1)
 
 c1=markers[markers$cluster==1 & markers$p_val_adj<=.05]
