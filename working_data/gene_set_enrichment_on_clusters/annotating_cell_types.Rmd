@@ -82,9 +82,9 @@ head(go_ls[[4]])
 
 files downloaded from CellMarker database
 ```{r loading cellmarker db markers}
-human_markers=read.table("Human_cell_markers.txt", sep='\t',header = TRUE)
+human_markers=read.table("Human_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
 
-single_markers=read.table("Single_cell_markers.txt", sep='\t',header = TRUE)
+single_markers=read.table("Single_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
 
 
 markers=read.table("cluster_markers.txt")
@@ -103,17 +103,56 @@ hmatch=merge(markers, human_markers[,c("tissueType","cellName","geneSymbol")],by
 ```
 
 ```{r checking for sc CM in biomarker genes}
+biomarkers= markers[,c("cluster","gene")] #keep just the clusterid and genenames
+
+bio_list=ls()
+
+for (cluster in unique(biomarkers$cluster)){
+  #print(cluster)
+  
+  #generate list of genes associated with each cluster
+  cluster_gene_list= biomarkers[biomarkers$cluster==cluster, "gene"]
+  
+bio_list[toString(cluster)]= list(cluster_gene_list)
+
+  
+}
+bio_list=lapply(bio_list,unlist)
+
+#for each row there is a list of markers, which we will unpack here as ref_list
+ref_list=strsplit(single_markers$geneSymbol,split = ", ")
+
+lapply(bio_list, function(x) temp %in% x ) 
 
 
+id=data.frame()
+for (row in 1:nrow(biomarkers)){
+  mark=biomarkers$gene[row]
+  cluster=biomarkers$cluster[row]
+  
+  rowid= which(unlist(lapply(ref_short, function(x) mark %in% x)))
+  if(length(rowid)) #if there are matching rows
+     {
+    
+    print('included')
+    
+    #return cellname, tissuetype, marker
+    newrow=c("name"=mark,"cluster"=cluster,single_markers[rowid,c("cellName","tissueType")])
+    
+    id=rbind(id, data.frame(newrow))
+  }
+}
 
-#matching based on human cell markers
-hmatch=merge(markers, human_markers[,c("tissueType","cellName","geneSymbol")],by.x="gene",by.y="geneSymbol") 
 
-#matching based on single cell markers
-
+  
+ 
 
 ```
 
+
+```{r}
+panglao=read.csv("panglao_output_top1gene.tsv",sep="\t")
+```
 
 
 
