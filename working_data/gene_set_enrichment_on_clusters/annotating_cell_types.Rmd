@@ -15,15 +15,9 @@ donors.integrated=readRDS("seurat-integrated-8.rds")
 ```
 
 
-
-```{r}
-#markers.mam <- findMarkers(donors.integrated, sce.mam$cluster, direction="up", lfc=1)
-
-#find positive markers for all clusters
+find markers for all clusters. not all clusters may have genes that meet the threshold criteria (logFC & %age of cell expression)
+```{r find positive markers}
 markers <- FindAllMarkers(donors.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 1)
-
-c1=markers[markers$cluster==1 & markers$p_val_adj<=.05]
-
 ```
 
 You may need to map symbols from to entrez id for goana
@@ -31,37 +25,42 @@ You may need to map symbols from to entrez id for goana
 ```{r mapping symbols to entrez for goana}
 require(org.Hs.eg.db)
 #keytypes(org.Hs.eg.db) #prints fields available for matching
-
 #keys: enter list of genes in the format specified in "keytype"
 #column: returned column field
 entrez=mapIds(org.Hs.eg.db,keys= markers$gene, keytype="SYMBOL", column=("ENTREZID"))
+
+#save symbols in new column
 markers$entrez=entrez
 
 
-# number of cells in each cluster
+# rank by number of cells assigned to each cluster
 ordered_clust=markers %>% group_by(cluster) %>% count %>% arrange(desc(n))
 
 
 
 ```
 
-```{r goana on 5 largest cell pops}
-#map symbols to entrez id for goana using DBi annotations
+generate a list containing enriched gene sets for each cluster
+```{r goana on each cluster}
 require(limma)
 require(GO.db)
 
 go_ls=list()
 
-for (i in 1:dim(ordered_clust[1])){
+for (i in 1:nrow(ordered_clust)){
+  #goana on each row (aka cell cluster)
 
-#markers$ez=ent_symb$entrez
+#subset cluster markers for total markers table  
 c_markers=markers[(markers$cluster==ordered_clust$cluster[i]) & (markers$p_val_adj<=.05), ]
 
-go.out <- goana(unique(c_markers$ez[!is.na(c_markers$ez)]), species="Hs",  universe=NULL)
+go.out <- goana(unique(c_markers$entrez[!is.na(c_markers$entrez)]), species="Hs",  universe=NULL)
 
-go.out <- go.out[order(go.out$P.DE),]
-#N: number of genes in gene set
-go.useful <- go.out[go.out$Ont=="BP" & go.out$N <= 200,]
+#focus on biological processes:BP
+#u can also limit size of gene set with column: N
+go.useful <- go.out[go.out$Ont=="BP" &go.out$P.DE<0.1,]
+
+#order by pvalue
+go.out <- go.out[order(go.out$P.DE),] 
 
 #names the list with the cluster number
 go_ls[[ordered_clust$cluster[i]]]=go.useful
@@ -73,9 +72,17 @@ print(paste("GO on cluster:", ordered_clust$cluster[i]))
 
 clusters 4,6,7,10,12
 ```{r examine gene sets in each cluster}
-head(go_ls[[4]])
+i=1
+i=4
+View(head(go_ls[[10]],20))
 
 ```
+cluster 1: immune response
+cluster 4: also immune response
+cluster 5: immune response
+cluster 6: ?
+cluster 9: ?
+cluster 10: ?
 
 
 
