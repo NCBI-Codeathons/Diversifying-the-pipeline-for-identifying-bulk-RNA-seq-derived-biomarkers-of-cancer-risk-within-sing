@@ -70,12 +70,10 @@ print(paste("GO on cluster:", ordered_clust$cluster[i]))
 
 ```
 
-clusters 4,6,7,10,12
 ```{r examine gene sets in each cluster}
-i=1
-i=4
-View(head(go_ls[[10]],20))
 
+View(head(go_ls[[10]],20))
+saveRDS(go_ls,"enriched_gene_sets_by_cluster.rds")
 ```
 cluster 1: immune response
 cluster 4: also immune response
