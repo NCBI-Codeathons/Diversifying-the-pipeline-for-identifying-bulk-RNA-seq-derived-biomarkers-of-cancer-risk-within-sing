@@ -7,25 +7,94 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r ingest data and seurat object conversion} 
 
-sce.norm=readRDS("sce-objects-4.rds") #list of sce objects
+```{bash wget count data}
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758471_PJ016.filtered.matrix.txt.gz
 
-#convert to seurat for data integration
-seur.norm=lapply(sce.norm, as.Seurat)
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758472_PJ017.filtered.matrix.txt.gz
 
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758473_PJ018.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758474_PJ025.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758475_PJ030.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758476_PJ032.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758477_PJ035.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2940098_PJ048.filtered.matrix.txt.gz
 ```
+
+
+```{r load libraries}
+packages=c("SingleCellExperiment","scater","data.table","Seurat","batchelor","future","dplyr","scran","parallel")
+invisible(lapply(packages, suppressWarnings(suppressMessages(require)), character.only = TRUE))
+```
+
+
+When you're integrating scRNA-seq datasets, starting with the count data is fine. QC them in parallel. Then, find shared gene expression.
+```{r data ingestion, include=FALSE}
+#get list of txt files
+files <- list.files(path= "~/",pattern = "GSM*",full.names = T) 
+
+#list of df stored in this var
+dfs=list()
+
+batch_list=c("PJ16","PJ17","PJ18","PJ25","PJ30","PJ32","PJ35","PJ48")
+
+
+file_input <- function(filename,batch){
+
+  print(paste("Reading:",filename))
+  #read in text files containing count data
+  #automatically gunzips
+  df=data.table::fread(filename) 
+  df=as.data.frame(df)
+  
+  #preprocess data table
+  df=df[!duplicated(df[,2]),] #drop rows with duplicate gene names (dropping the second instance)
+  row.names(df)=df[,2] #set ensembl id to row names (ensembl id are unique, but gene names aren't)
+  df=df[,3:ncol(df)]
+  
+  return(df) 
+}
+
+
+#generate list of dataframes containing count data
+
+dfs <- lapply(files, FUN=file_input,batch=batch_list)
+#dfs <- clusterMap(cluster, file_input, filename=files,batch=batch_list)
+```
+
+
 
 
 ```{r adding donor metadata to seurat object}
-batch_list=c("PJ16","PJ17","PJ30","PJ32")
+#seur.nom will be a list of seurat objects from each donor
+seur.norm=ls()
 
 for( i in 1:length(batch_list)){
 current_donor= batch_list[i]
-  
-seur.norm[[i]]= AddMetaData(seur.norm[[i]], metadata=current_donor,col.name="donor")}
-#seur.nom is now a list of seurat objects from each donor
+
+seur.norm[[i]] <- CreateSeuratObject(counts = dfs[[i]], min.cells = 3, min.features  = 100, )
+
+seur.norm[[i]]= AddMetaData(seur.norm[[i]],
+                metadata=currenti_donor,col.name="donor")
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+    seur.norm[[i]] <- NormalizeData(seur.norm[[i]], verbose = FALSE)
+
+    #remove cells with high MT expression
+    seur.norm[[i]]=subset(seur.norm[[i]], subset=nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt<5)
+    seur.norm[[i]] <- FindVariableFeatures(seur.norm[[i]], selection.method = "vst",  nfeatures = 2000, verbose = FALSE)
+
+}
+
+#remove unnneeded variables
+remove(dfs)
 ```
+
+
 
 
 https://satijalab.org/seurat/v3.1/merge_vignette.html
@@ -52,8 +121,10 @@ donors.integrated=IntegrateData(anchorset = anchors,dims=1:30)
 ```{r dim reduction and visualization on corrected data}
 DefaultAssay(donors.integrated) <- "integrated"
 
-# Run the standard workflow for visualization and clustering
+#scale data before running PCA
 donors.integrated <- ScaleData(donors.integrated, verbose = FALSE)
+
+# Run the standard workflow for visualization and clustering
 donors.integrated <- RunPCA(donors.integrated, npcs = 30, verbose = FALSE)
 donors.integrated <- RunUMAP(donors.integrated, reduction = "pca", dims = 1:30)
 donors.integrated <- RunTSNE(donors.integrated, reduction = "pca", dims = 1:30)
@@ -94,7 +165,7 @@ topmarker=integrated.markers %>% group_by(cluster) %>% top_n(n = 1, wt = avg_log
 
 
 ```{r visualizing clusters with markers}
-DimPlot(donors.integrated, reduction = "umap")
+DimPlot(donors.integrated, reduction = "umap",group.by="donor")
 
 #histogram for each cluster
 RidgePlot(donors.integrated,features=topmarker$gene[6:10])

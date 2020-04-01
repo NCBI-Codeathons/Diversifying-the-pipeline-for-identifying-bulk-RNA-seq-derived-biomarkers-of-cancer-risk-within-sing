@@ -40,8 +40,9 @@ if (length(new.pkg)) {
 
 ```{r load libraries}
 packages=c("SingleCellExperiment","scater","data.table","Seurat","batchelor","future","dplyr","scran","parallel")
-invisible(lapply(packages, require, character.only = TRUE))
+invisible(lapply(packages, suppressWarnings(suppressMessages(require)), character.only = TRUE))
 ```
+
 
 ```{r setting up parallel core usage, include=FALSE}
 cluster <- makeCluster(detectCores()) #only base packages loaded
