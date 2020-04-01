@@ -70,7 +70,7 @@ print(paste("GO on cluster:", ordered_clust$cluster[i]))
 
 ```
 
-```{r examine gene sets in each cluster}
+```{r Cluster annotation using enriched gene sets}
 
 View(head(go_ls[[10]],20))
 saveRDS(go_ls,"enriched_gene_sets_by_cluster.rds")
@@ -82,30 +82,34 @@ cluster 6: ?
 cluster 9: ?
 cluster 10: ?
 
-
-
+## Cluster annotation using markers
 
 files downloaded from CellMarker database
 ```{r loading cellmarker db markers}
 human_markers=read.table("Human_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
-
 single_markers=read.table("Single_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
-
-
-markers=read.table("cluster_markers.txt")
+#markers=read.table("cluster_markers.txt") #load saved marker data if needed
 ```
-
 
 
 ```{r checking for occurrence of db markers in biomarker genes}
-
 #matching based on human cell markers
 hmatch=merge(markers, human_markers[,c("tissueType","cellName","geneSymbol")],by.x="gene",by.y="geneSymbol") 
 
-#matching based on single cell markers
-
-
 ```
+cluster labels:
+0) NES neural progenitor cell /cancer stem cell 
+1) B cell (cd74), neural cell, schwann cell?
+2) eosinophil (cd9) schwann cell, astrocyte
+3) B cell (cd74)
+4) B cell ; cd74/gfap
+5) macrophage (cd14/ cd68/cxcr4/cd163) with socx2/9 expression?
+6) b cell cd74/gfap
+7) cd24/ncam/cd9 ; neurons ncam=embryonic cells; cd24 (diff neuroblasts)
+8) glul ; associated with liver carcinoma
+9) sox2, nes, ncam1, thy1, cd24, abcg2 cancer; also has tissuetype: embryo
+10) blood, thy1, cd9
+11)
 
 ```{r checking for sc CM in biomarker genes}
 biomarkers= markers[,c("cluster","gene")] #keep just the clusterid and genenames

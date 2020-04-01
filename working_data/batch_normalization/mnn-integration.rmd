@@ -1,0 +1,242 @@
+---
+title: "integration using MNN"
+output: html_document
+---
+
+https://bioconductor.org/packages/3.11/bioc/vignettes/batchelor/inst/doc/correction.html#3_mutual_nearest_neighbors
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{bash wget count data}
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758471_PJ016.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758472_PJ017.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758473_PJ018.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758474_PJ025.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758475_PJ030.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758476_PJ032.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758477_PJ035.filtered.matrix.txt.gz
+
+wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2940098_PJ048.filtered.matrix.txt.gz
+```
+
+Install missing required Bioconductor packages
+```{r install missing packages Bioconductor}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+pkg <- c("SingleCellExperiment", "scater", "scran", "BiocGenerics", "DelayedArray", "DelayedMatrixStats", "limma", "S4Vectors", "SummarizedExperiment", "batchelor")
+new.pkg <- pkg[!(pkg %in% installed.packages())]
+if (length(new.pkg)) {
+  BiocManager::install(new.pkg)
+}
+```
+
+```{r load libraries}
+packages=c("SingleCellExperiment","scater","data.table","Seurat","batchelor","future","dplyr","scran","parallel")
+invisible(lapply(packages, require, character.only = TRUE))
+```
+
+```{r setting up parallel core usage, include=FALSE}
+cluster <- makeCluster(detectCores()) #only base packages loaded
+
+#load additional libraries
+clusterEvalQ(cluster,
+    {invisible(lapply(c("SingleCellExperiment","scater","data.table","Seurat","batchelor","future","dplyr","scran","parallel"), require, character.only = TRUE))} ) 
+
+
+#stopCluster(cluster) #remember to close at the end
+```
+
+
+When you're integrating scRNA-seq datasets, starting with the count data is fine. QC them in parallel. Then, find shared gene expression.
+```{r data ingestion}
+files <- list.files(pattern = "GSM*") #get list of txt files
+dfs=list()
+
+batch_list=c("PJ16","PJ17","PJ18","PJ25","PJ30","PJ32","PJ35","PJ48")
+
+#files=files[1:2]
+#batch_list=batch_list[1:2]
+
+file_input <- function(filename,batch){
+    #load in data, and save as list of dataframes
+  #filen=files[i] #filename
+  #batch=batch_list[i] #donor batch
+  
+  print(paste("Reading:",filename))
+  df=data.table::fread(filename) #read in text files containing count data
+  df=as.data.frame(df)
+  
+  #preprocess data table
+  df=df[!duplicated(df[,2]),] #drop rows with duplicate gene names (dropping the second instance)
+  row.names(df)=df[,2] #set ensembl id to row names (ensembl id are unique, but gene names aren't)
+  df=df[,3:ncol(df)]
+  
+  
+  
+  return(df) #delete temporary variable from memory
+}
+
+
+#generate list of dataframes containing count data
+
+dfs <- lapply(files, FUN=file_input,batch=batch_list)
+#dfs <- clusterMap(cluster, file_input, filename=files,batch=batch_list)
+```
+
+
+```{r create sce objects and qc}
+#sce=list() #list of single cell experiments
+
+
+preprocess <- function(df){
+  #create SCE objects and preprocess/filter based on count abundance and MT gene expression
+
+  sceset2 <- SingleCellExperiment(assays = list(counts = as.matrix(df)))
+gene_nonzero <- rowSums(counts(sceset2) > 0) > 0  #genes with nonzero counts
+cell_nonzero <- colSums(counts(sceset2) > 0) > 0 #cells with nonzero counts
+sceset2 <- sceset2[gene_nonzero, cell_nonzero] #remove zero rows and columns
+
+sceset2 <- addPerCellQC(sceset2) #add basic QC metrics
+
+#remove cells outside 3 MAD
+disc.total <- isOutlier(sceset2$sum, nmads=3, type="lower", log=TRUE) 
+sceset2 <- sceset2[,!disc.total]
+
+#remove cells with high percentage of mt genes
+sceset2 <- addPerCellQC(sceset2, subsets=list(Mito=grep("^mt-", rownames(sceset2)),ignore.case=T))
+
+qc_mito <- quickPerCellQC(colData(sceset2), percent_subsets="subsets_Mito_percent")
+
+sceset2 <- sceset2[,!qc_mito$discard]
+
+#discard.mito <- isOutlier(qc_mito$subsets_MT_percent, type="higher")
+#sceset2 <- sceset2[,!qc_mito$discard]
+print(dim(sceset2))
+
+return(sceset2)
+
+#use Coldata
+}
+
+#generate list of SingleCellExperiment objects from each dataframe
+#sce <- clusterMap(cluster, preprocess,df=dfs)
+sce <- lapply( dfs, FUN= preprocess)
+
+
+#stopCluster(cluster)
+#remove dfs variable from memory
+remove(dfs) 
+```
+
+
+
+```{r find shared genes and log-normalize to get expression}
+#keep only genes expressed in all datasets
+
+#implementation: keep trimming/finding intersection with 1st dataset
+
+
+universe= rownames(sce[[1]])
+
+
+for (i in 2:length(files)){
+  #find subset shared genes in all datasets
+  universe=intersect(universe,rownames(sce[[i]]))
+}
+
+print(paste("# Shared genes:", length(universe))  )
+
+#subset all sce objects to contain only shared rows
+sce=lapply(sce, function(obj,genes) obj[genes,], genes=universe)
+
+sce.norm=do.call(multiBatchNorm, sce)#get log expression using multibatchnorm
+
+dec=lapply(sce.norm,modelGeneVar)
+
+combined.dec <- do.call(combineVar, dec)
+chosen.hvgs <- combined.dec$bio > 0
+summary(chosen.hvgs)
+
+
+#remove unneeded variables if necessary
+remove(sce)
+```
+
+MNN
+haghverdi,2018
+
+Mutual nearest neighbors occupy the same biological state prior to the batch effect. The batch effect is orthogonal to the biology in high-dimensional space. MNN doesn't assume population compositions are known beforehand or are similar between datasets. It allows for unmatch populations. 
+
+Use fastmnn implementation from batchelor package:
+-reduce both datasets down to "d" principal components
+-subset.row= specify genes of interest to use (ie highly variable genes that were just identified)
+- k: # nearest neighbors 
+```{r MNN}
+f.out=do.call(batchelor::fastMNN, sce.norm)
+
+
+#f.out= batchelor::fastMNN(sce.norm[[1]],sce.norm[[2]], subset.row=chosen.hvgs)
+```
+
+
+
+```{r UMAP visualization of MNN batch correction}
+f.out= runTSNE(f.out, dimred="corrected")
+plotTSNE(f.out, colour_by="batch")
+
+f.out= runUMAP(f.out, dimred="corrected")
+
+jpeg(file="MNN-integrated-umap.jpeg")
+plotUMAP(f.out, colour_by="batch",title="MNN batch corrected")
+dev.off()
+```
+
+
+
+
+# visualization prior to correction
+
+```{r}
+#correctexperiments merges sce objects, and applies correction to both objects; this chunk is all PRIOR to correction
+uncorrected= do.call(correctExperiments,sce.norm)
+#combined <- correctExperiments(sce.norm[[1]],sce.norm[[2]],sce.norm[[3]],sce.norm[[4]], PARAM=NoCorrectParam())
+#combined <- runPCA(combined, subset_row=chosen.hvgs)
+
+uncorrected <- runUMAP(uncorrected, dimred="PCA")
+#combined <- runTSNE(combined, dimred="PCA")
+
+jpeg(file="uncorrected-batch-umap.jpeg")
+plotUMAP(uncorrected, colour_by="batch")
+dev.off()
+```
+
+```{r}
+
+reducedDim(f.out,type = 'corrected') #corrected PCs
+
+assay(f.out, "reconstructed") #corrected expression for each gene; only use for viz
+
+
+
+
+```
+
+
+
+
+
+
+```{r saved object}
+saveRDS(f.out, file = "mnn-integrated.rds")
+
+saveRDS(sce.norm, file = "sce-objects-4.rds")
+```
+
