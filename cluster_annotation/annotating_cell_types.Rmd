@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Load in Seurat object containing integrated and normalized data from 8 donors
 ```{r loading data}
-donors.integrated=readRDS("seurat-integrated-8.rds")
+donors.integrated=readRDS("seurat-integrated.rds")
 ```
 
 
@@ -23,11 +23,31 @@ donors.integrated <- FindClusters(donors.integrated, resolution = 0.5) #louvain
 ```
 
 
+```{r initial Cluster labeling on umap}
+jpeg("seurat-cluster_number-umap.jpeg")
+DimPlot(donors.integrated, reduction = "umap", group.by ="seurat_clusters" )
+dev.off()
+```
+
+
+
+consider running this in parallel
 ```{r biomarkers for clusters }
+#to run finallmarkers in parallel
+#plan("multiprocess", workers = detectCores())
+
 #find markers for all clusters
 integrated.markers <- FindAllMarkers(donors.integrated, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
 
-topmarker=integrated.markers %>% group_by(cluster) %>% top_n(n = 1, wt = avg_logFC)
+#save
+fwrite(integrated.markers, file="seurat-all_markers.txt")
+#remove mitochondrial genes
+integrated.markers=subset(integrated.markers,
+                          !grepl("MT-",row.names(integrated.markers)))
+
+
+
+topmarker=integrated.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
 ```
 
 
@@ -55,8 +75,41 @@ find markers for all clusters. not all clusters may have genes that meet the thr
 markers <- FindAllMarkers(donors.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 1)
 ```
 
-You may need to map symbols from to entrez id for goana
 
+## Cluster annotation using markers
+
+files downloaded from CellMarker database
+```{r loading cellmarker db markers}
+human_markers=read.table("Human_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
+single_markers=read.table("Single_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
+#markers=read.table("cluster_markers.txt") #load saved marker data if needed
+```
+
+
+```{r checking for occurrence of db markers in biomarker genes}
+#matching based on human cell markers
+hmatch=merge(markers, human_markers[,c("tissueType","cellName","geneSymbol")],by.x="gene",by.y="geneSymbol") 
+
+```
+cluster labels:
+0) NES neural progenitor cell /cancer stem cell 
+1) B cell (cd74), neural cell, schwann cell?
+2) eosinophil (cd9) schwann cell, astrocyte
+3) B cell (cd74)
+4) B cell ; cd74/gfap
+5) macrophage (cd14/ cd68/cxcr4/cd163) with socx2/9 expression?
+6) b cell cd74/gfap
+7) cd24/ncam/cd9 ; neurons ncam=embryonic cells; cd24 (diff neuroblasts)
+8) glul ; associated with liver carcinoma
+9) sox2, nes, ncam1, thy1, cd24, abcg2 cancer; also has tissuetype: embryo
+10) blood, thy1, cd9
+11)
+
+
+
+## Cluster annotation using Gene set ORA
+
+You may need to map symbols from to entrez id for goana
 ```{r mapping symbols to entrez for goana}
 require(org.Hs.eg.db)
 #keytypes(org.Hs.eg.db) #prints fields available for matching
@@ -105,8 +158,7 @@ print(paste("GO on cluster:", ordered_clust$cluster[i]))
 
 ```
 
-```{r Cluster annotation using enriched gene sets}
-
+```{r Viewing enriched gene sets}
 View(head(go_ls[[10]],20))
 saveRDS(go_ls,"enriched_gene_sets_by_cluster.rds")
 ```
@@ -117,34 +169,8 @@ cluster 6: ?
 cluster 9: ?
 cluster 10: ?
 
-## Cluster annotation using markers
-
-files downloaded from CellMarker database
-```{r loading cellmarker db markers}
-human_markers=read.table("Human_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
-single_markers=read.table("Single_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
-#markers=read.table("cluster_markers.txt") #load saved marker data if needed
-```
 
 
-```{r checking for occurrence of db markers in biomarker genes}
-#matching based on human cell markers
-hmatch=merge(markers, human_markers[,c("tissueType","cellName","geneSymbol")],by.x="gene",by.y="geneSymbol") 
-
-```
-cluster labels:
-0) NES neural progenitor cell /cancer stem cell 
-1) B cell (cd74), neural cell, schwann cell?
-2) eosinophil (cd9) schwann cell, astrocyte
-3) B cell (cd74)
-4) B cell ; cd74/gfap
-5) macrophage (cd14/ cd68/cxcr4/cd163) with socx2/9 expression?
-6) b cell cd74/gfap
-7) cd24/ncam/cd9 ; neurons ncam=embryonic cells; cd24 (diff neuroblasts)
-8) glul ; associated with liver carcinoma
-9) sox2, nes, ncam1, thy1, cd24, abcg2 cancer; also has tissuetype: embryo
-10) blood, thy1, cd9
-11)
 
 ```{r checking for sc CM in biomarker genes}
 biomarkers= markers[,c("cluster","gene")] #keep just the clusterid and genenames

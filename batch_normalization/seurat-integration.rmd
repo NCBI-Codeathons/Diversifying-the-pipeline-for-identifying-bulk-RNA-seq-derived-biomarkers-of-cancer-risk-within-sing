@@ -167,7 +167,7 @@ donors.integrated@meta.data
 
 
 ```{r saving seurat object}
-saveRDS(donors.integrated,"seurat-integrated.rds")
+saveRDS(donors.integrated,"~/seurat-integrated.rds")
 ```
 
 
