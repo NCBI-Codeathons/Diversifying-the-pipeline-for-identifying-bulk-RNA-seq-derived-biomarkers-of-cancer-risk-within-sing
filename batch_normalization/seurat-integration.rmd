@@ -8,7 +8,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{bash wget count data}
+```{bash wget count data, eval=FALSE, include=FALSE}
 wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758471_PJ016.filtered.matrix.txt.gz
 
 wget https://github.com/NCBI-Codeathons/Identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-single-cell-populations/raw/master/data/GSE103224_RAW/GSM2758472_PJ017.filtered.matrix.txt.gz
@@ -72,16 +72,20 @@ dfs <- lapply(files, FUN=file_input,batch=batch_list)
 
 ```{r adding donor metadata to seurat object}
 #seur.nom will be a list of seurat objects from each donor
-seur.norm=ls()
+seur.norm=list()
 
 for( i in 1:length(batch_list)){
+  
+  print(i)
 current_donor= batch_list[i]
 
-seur.norm[[i]] <- CreateSeuratObject(counts = dfs[[i]], min.cells = 3, min.features  = 100, )
+seur.norm[[i]] <- CreateSeuratObject(counts = dfs[[i]])
 
 seur.norm[[i]]= AddMetaData(seur.norm[[i]],
-                metadata=currenti_donor,col.name="donor")
-pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+                            metadata=current_donor,col.name="donor")
+
+
+seur.norm[[i]][["percent.mt"]] <- PercentageFeatureSet(seur.norm[[i]], pattern = "^MT-")
     seur.norm[[i]] <- NormalizeData(seur.norm[[i]], verbose = FALSE)
 
     #remove cells with high MT expression
@@ -138,14 +142,6 @@ DimPlot(donors.integrated, reduction = "umap", group.by = "donor")
 first dataset= reference
 additional datasets= queries
 
-use cluster labels from reference, to label queries
-```{r use }
-
-donors.query= seur.norm[[2]]
-donors.anchors <- FindTransferAnchors(reference = donors.integrated, query = donors.query, dims=1:30, project.query = T)
-
-```
-
 
 ```{r defining clusters}
 donors.integrated <- FindNeighbors(donors.integrated, dims = 1:10) # generates KNN graph
@@ -166,6 +162,7 @@ topmarker=integrated.markers %>% group_by(cluster) %>% top_n(n = 1, wt = avg_log
 
 ```{r visualizing clusters with markers}
 DimPlot(donors.integrated, reduction = "umap",group.by="donor")
+DimPlot(donors.integrated, reduction = "umap",group.by="seurat_clusters")
 
 #histogram for each cluster
 RidgePlot(donors.integrated,features=topmarker$gene[6:10])
@@ -190,32 +187,34 @@ pangload db
 cellmarker
 
 
-```{r}
+
+```{r accessing data within seurat, eval=FALSE, include=FALSE}
+#donors.integrated@___
+
+#metadata
+donors.integrated@meta.data
+#includes, "donor" defined at the beginning and cluster assignment
+
+#set/list prev qunatitiative data as default (DefaultAssay) 
+donors.integrated@assays # RNA and integrated , are available
+Assays(donors.integrated)
+
+#all contains cluster assignment as char list
+donors.integrated@active.ident
+
+
+#stored reductions( umap, pca, tsne) with metadata
+donors.integrated@reductions
+
+#metadata, how calculations were made (# dims used)
+#stored as  a list for each dataset (in this case 8)
+donors.integrated@meta.data
 
 ```
 
 
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
+```{r saving seurat object}
 saveRDS(donors.integrated,"seurat-integrated.rds")
 ```
+
 

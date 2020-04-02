@@ -7,11 +7,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Assignment using gene sets
 
-```{r}
+Load in Seurat object containing integrated data from 8 donors
+```{r loading data}
 donors.integrated=readRDS("seurat-integrated-8.rds")
-
 ```
 
 
