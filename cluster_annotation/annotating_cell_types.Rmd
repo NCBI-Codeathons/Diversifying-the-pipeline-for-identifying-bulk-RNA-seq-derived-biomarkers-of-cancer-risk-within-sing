@@ -8,10 +8,46 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-Load in Seurat object containing integrated data from 8 donors
+Load in Seurat object containing integrated and normalized data from 8 donors
 ```{r loading data}
 donors.integrated=readRDS("seurat-integrated-8.rds")
 ```
+
+
+```{r defining clusters}
+donors.integrated <- FindNeighbors(donors.integrated, dims = 1:10) # generates KNN graph
+donors.integrated <- FindClusters(donors.integrated, resolution = 0.5) #louvain
+
+#clusters can be accessed using Idents()
+#cluster labels accessed via: levels(object)
+```
+
+
+```{r biomarkers for clusters }
+#find markers for all clusters
+integrated.markers <- FindAllMarkers(donors.integrated, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+
+topmarker=integrated.markers %>% group_by(cluster) %>% top_n(n = 1, wt = avg_logFC)
+```
+
+
+```{r visualizing clusters with markers}
+DimPlot(donors.integrated, reduction = "umap",group.by="donor")
+DimPlot(donors.integrated, reduction = "umap",group.by="seurat_clusters")
+
+#histogram for each cluster
+RidgePlot(donors.integrated,features=topmarker$gene[6:10])
+
+#dotplot: expression  + %age expressing 
+DotPlot(donors.integrated,features=topmarker$gene) + RotatedAxis()
+
+#Featureplot  #3d map with single gene heatmap
+
+
+#heatmap with cluster abels and selected genes
+DoHeatmap(donors.integrated, features = topmarker, size = 3)
+```
+
 
 
 find markers for all clusters. not all clusters may have genes that meet the threshold criteria (logFC & %age of cell expression)
