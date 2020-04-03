@@ -6,7 +6,7 @@ output: html_document
 https://bioconductor.org/packages/3.11/bioc/vignettes/batchelor/inst/doc/correction.html#3_mutual_nearest_neighbors
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE )
 ```
 
 ```{bash wget count data}
@@ -45,10 +45,10 @@ invisible(lapply(packages, suppressWarnings(suppressMessages(require)), characte
 
 
 ```{r setting up parallel core usage, include=FALSE}
-cluster <- makeCluster(detectCores()) #only base packages loaded
+#cluster <- makeCluster(detectCores()) #only base packages loaded
 
 #load additional libraries
-clusterEvalQ(cluster,
+#clusterEvalQ(cluster,
     {invisible(lapply(c("SingleCellExperiment","scater","data.table","Seurat","batchelor","future","dplyr","scran","parallel"), require, character.only = TRUE))} ) 
 
 
@@ -56,23 +56,24 @@ clusterEvalQ(cluster,
 ```
 
 
+
 When you're integrating scRNA-seq datasets, starting with the count data is fine. QC them in parallel. Then, find shared gene expression.
-```{r data ingestion}
-files <- list.files(pattern = "GSM*") #get list of txt files
+```{r data ingestion, include=FALSE}
+#get list of txt files
+files <- list.files(path= "~/",pattern = "GSM*",full.names = T) 
+
+#list of df stored in this var
 dfs=list()
 
 batch_list=c("PJ16","PJ17","PJ18","PJ25","PJ30","PJ32","PJ35","PJ48")
 
-#files=files[1:2]
-#batch_list=batch_list[1:2]
 
 file_input <- function(filename,batch){
-    #load in data, and save as list of dataframes
-  #filen=files[i] #filename
-  #batch=batch_list[i] #donor batch
-  
+
   print(paste("Reading:",filename))
-  df=data.table::fread(filename) #read in text files containing count data
+  #read in text files containing count data
+  #automatically gunzips
+  df=data.table::fread(filename) 
   df=as.data.frame(df)
   
   #preprocess data table
@@ -80,9 +81,7 @@ file_input <- function(filename,batch){
   row.names(df)=df[,2] #set ensembl id to row names (ensembl id are unique, but gene names aren't)
   df=df[,3:ncol(df)]
   
-  
-  
-  return(df) #delete temporary variable from memory
+  return(df) 
 }
 
 
@@ -91,6 +90,7 @@ file_input <- function(filename,batch){
 dfs <- lapply(files, FUN=file_input,batch=batch_list)
 #dfs <- clusterMap(cluster, file_input, filename=files,batch=batch_list)
 ```
+
 
 
 ```{r create sce objects and qc}
@@ -168,7 +168,7 @@ summary(chosen.hvgs)
 
 
 #remove unneeded variables if necessary
-remove(sce)
+#remove(sce)
 ```
 
 MNN
@@ -180,20 +180,23 @@ Use fastmnn implementation from batchelor package:
 -reduce both datasets down to "d" principal components
 -subset.row= specify genes of interest to use (ie highly variable genes that were just identified)
 - k: # nearest neighbors 
-```{r MNN}
+```{r Mutual nearest neighbhors}
 f.out=do.call(batchelor::fastMNN, sce.norm)
-
-
-#f.out= batchelor::fastMNN(sce.norm[[1]],sce.norm[[2]], subset.row=chosen.hvgs)
+#corrected values are stored within, reducedDimNames: "corrected"
 ```
 
 
 
 ```{r UMAP visualization of MNN batch correction}
+f.out=runPCA(f.out, dimred="corrected")
+
 f.out= runTSNE(f.out, dimred="corrected")
 plotTSNE(f.out, colour_by="batch")
 
 f.out= runUMAP(f.out, dimred="corrected")
+
+
+saveRDS(f.out,"~/sce-integrated.rds")
 
 jpeg(file="MNN-integrated-umap.jpeg")
 plotUMAP(f.out, colour_by="batch",title="MNN batch corrected")
@@ -218,6 +221,81 @@ jpeg(file="uncorrected-batch-umap.jpeg")
 plotUMAP(uncorrected, colour_by="batch")
 dev.off()
 ```
+
+```{r clustering using SNN graph}
+
+g <- buildSNNGraph(f.out, k=11, use.dimred = 'PCA')
+clust <- igraph::cluster_walktrap(g)$membership
+
+f.out$cluster= factor(clust) #assign to metadata
+plotUMAP(f.out, colour_by="cluster")
+
+#reducedDim(f.out, "force") <- igraph::layout_with_fr(g)
+
+
+#jpeg(file="sce-cluster_numbers-umap.jpeg")
+plotUMAP(f.out, colour_by="cluster")
+#dev.off()
+
+
+#generates list of dataframes
+sce_markers=findMarkers(f.out, f.out$cluster, assay.type="corrected")
+
+
+#direction='up' # for 1 sided t-test, to focus on overexpressed genes
+#pval.type="all" or "some" #requires strong DE with all clusters
+#generates dataframes for each cluster; logfc vs each other cluster
+
+
+saveRDS(sce_markers,"~/markers-sce_clusters.rds")
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 
