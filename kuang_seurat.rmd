@@ -1,0 +1,258 @@
+---
+title: "integration-seurat"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("/Users/jason/Documents/bioinformatics/kuang_scrna_seq")
+```
+
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE138826
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7125354/
+
+```{bash wget count data, eval=FALSE, include=FALSE}
+wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE138nnn/GSE138826/suppl/GSE138826_regen_data.rds.gz
+wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE138nnn/GSE138826/matrix/
+```
+
+
+```{r load libraries, include=FALSE}
+packages=c("SingleCellExperiment","scater","data.table","Seurat","batchelor","future","dplyr","scran","parallel")
+invisible(lapply(packages, suppressWarnings(suppressMessages(require)), character.only = TRUE))
+```
+
+
+
+
+```{r}
+temp=readRDS("GSE138826_regen_data.rds")
+#this is a list, not a seurat object
+
+#SCT is the transformed data
+#RNA is the raw count data
+#seur.norm@ options: metadata, transformed data (sample x gene)
+
+#seur.norm=CreateSeuratObject(counts=temp$RNA@data, assay="RNA", meta.data = temp$RNA@varMetadata )
+seur.norm=CreateSeuratObject(counts=temp$SCT@data, assay="SCT", meta.data = temp$SCT@varMetadata )
+
+
+plan("multiprocess", workers = detectCores())
+#remove uneeded object
+#did not read in raw count data
+remove(temp)
+seur.norm = FindVariableFeatures(seur.norm, selection.method = "vst",  nfeatures = 2000, verbose = FALSE)
+
+```
+
+
+
+
+
+
+
+When you're integrating scRNA-seq datasets, starting with the count data is fine. QC them in parallel. Then, find shared gene expression.
+
+not run
+```{r data ingestion, include=FALSE}
+
+
+file_input <- function(filename,batch){
+
+  print(paste("Reading:",filename))
+  #read in text files containing count data
+  #automatically gunzips
+  df=data.table::fread(filename) 
+  df=as.data.frame(df)
+  
+  #preprocess data table
+  df=df[!duplicated(df[,1]),] #drop rows with duplicate gene names (dropping the second instance)
+  row.names(df)=df[,1] #set ensembl id to row names (ensembl id are unique, but gene names aren't)
+  df=df[,2:ncol(df)]
+  
+  return(df) 
+}
+
+
+#contains only 5k/20k cells
+files= "/Users/jason/Documents/bioinformatics/cosg/header.txt"
+
+dfs= file_input(files)
+```
+
+
+not run
+```{r adding donor metadata to seurat object}
+
+#reset limit, for GB use 1024^3
+options(future.globals.maxSize= 1.5*1024^3)
+
+#metadata can be added
+#seur.norm= AddMetaData(seur.norm, metadata=current_donor,col.name="donor_id")
+
+
+seur.norm <- PercentageFeatureSet(seur.norm, pattern = "^MT-", col.name="percent.mt")
+
+#sctransform replaces normalizedata/scaledata/findvariablefeatures, but doesn't work well with runPCA
+
+
+seur.norm=NormalizeData(seur.norm)
+
+seur.norm = FindVariableFeatures(seur.norm, selection.method = "vst",  nfeatures = 2000, verbose = FALSE)
+
+
+#remove cells with high MT expression
+#seur.norm=subset(seur.norm, subset=nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt<5)
+
+
+
+```
+
+
+
+
+
+
+
+run this and below
+```{r parallelization plan}
+# change the current plan to access parallelization
+#if you can't run in parallel, nothing downstream changes, just skip this part
+plan("multiprocess", workers = detectCores())
+plan()
+```
+
+
+
+https://satijalab.org/seurat/v3.1/merge_vignette.html
+there's only a single dataset, so no need to generate anchors for merging + batch-correction
+
+
+```{r dim reduction and visualization on corrected data}
+# Run the standard workflow for visualization and clustering
+seur.norm= ScaleData(seur.norm)
+
+seur.norm <- RunPCA(seur.norm, npcs = 30, verbose = FALSE)
+seur.norm <- RunUMAP(seur.norm, reduction = "pca", dims = 1:30)
+seur.norm <- RunTSNE(seur.norm, reduction = "pca", dims = 1:30)
+
+#DimPlot(seur.norm, reduction = "tsne", group.by = "donor") 
+
+```
+p
+
+
+```{r defining clusters}
+seur.norm <- FindNeighbors(seur.norm, dims = 1:10) # generates KNN graph
+seur.norm <- FindClusters(seur.norm, resolution = 0.5) #louvain0
+
+#clusters can be accessed using Idents()
+#cluster labels accessed via: levels(object)
+```
+
+
+```{r initial Cluster labeling on umap}
+jpeg("/Users/jason/Documents/bioinformatics/cosg/cosg-seurat-cluster_number-umap.jpeg")
+DimPlot(seur.norm, reduction = "umap", group.by ="seurat_clusters" )
+dev.off()
+```
+
+consider running this in parallel
+```{r biomarkers for clusters }
+
+#find markers for all clusters
+integrated.markers <- FindAllMarkers(seur.norm, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+
+#save
+fwrite(integrated.markers, file="/Users/jason/Documents/bioinformatics/cosg/seurat-all_markers.txt")
+#remove mitochondrial genes
+integrated.markers=subset(integrated.markers,
+                          !grepl("MT-",row.names(integrated.markers)))
+
+
+
+topmarker=integrated.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
+```
+
+
+```{r visualizing clusters with markers}
+DimPlot(seur.norm, reduction = "umap",group.by="seurat_clusters")
+
+#histogram for each cluster
+RidgePlot(seur.norm,features=topmarker$gene[6:10])
+
+#dotplot: expression  + %age expressing 
+DotPlot(seur.norm,features=gene_list) + RotatedAxis()
+
+#Featureplot  #2d umap with single gene heatmap
+FeaturePlot(seur.norm,features=gene_list) 
+
+#there's no pax7/myf5/myod/myogenin in this dataset
+gene_list=c("EGFR","VCAM1","NOTCH3","APOE","APOC1","VWF","CKM","TTN")
+VlnPlot(seur.norm, features=gene_list, pt.size= 0.2)
+
+#heatmap with cluster abels and selected genes
+DoHeatmap(seur.norm, features = topmarker, size = 3)
+```
+
+
+
+
+
+find markers for all clusters. not all clusters may have genes that meet the threshold criteria (logFC & %age of cell expression)
+```{r find positive markers for labeling}
+
+
+markers <- FindAllMarkers(seur.norm, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.58) #1.5fold
+
+positive_markers=integrated.markers[integrated.markers$avg_logFC>0,]
+#save
+fwrite(positive_markers, file="seurat-positive_markers.txt")
+```
+
+
+## Cluster annotation using markers
+
+files downloaded from CellMarker database
+```{r loading cellmarker db markers}
+human_markers=read.table("Human_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
+single_markers=read.table("Single_cell_markers.txt", sep='\t',header = TRUE, stringsAsFactors = F)
+#markers=read.table("cluster_markers.txt") #load saved marker data if needed
+```
+
+
+```{r checking for occurrence of db markers in biomarker genes}
+#matching based on human cell markers
+hmatch=merge(positive_markers,
+             human_markers[,c("tissueType","cellName","geneSymbol")],by.x="gene",by.y="geneSymbol") 
+
+#sort by cluster and padj
+hmatch=arrange(hmatch,cluster, p_val_adj)
+
+```
+
+
+
+```{r adding in info from single cell marker dataset}
+sc_match=sapply(unique(positive_markers$gene),
+       FUN = function(marker)
+  single_markers[grep(marker,single_markers$cellMarker),"cellName"], simplify=T, USE.NAMES = T)
+
+hmatch$sc_cellname=  apply( hmatch, 1, function(row) sc_match[row['gene']][1] )
+
+#relevant columns and order
+rel_col=c('cluster','gene','avg_logFC','pct.1','pct.2','cellName','sc_cellname')
+
+View(hmatch[,rel_col])
+#hdt=as.data.table(hmatch)
+
+#View( hmatch[,by= cluster]   )
+
+```
+
+
+```{r saving seurat object}
+saveRDS(seur.norm,"/Users/jason/Documents/bioinformatics/cosg/cosgrove_seurat.rds")
+```
+
+
