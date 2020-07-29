@@ -5,6 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+setwd("/Users/jason/Documents/git_repos/Diversifying-the-pipeline-for-identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-sing/cluster_annotation")
 ```
 
 
@@ -77,6 +78,9 @@ markers <- FindAllMarkers(donors.integrated, only.pos = TRUE, min.pct = 0.25, lo
 positive_markers=integrated.markers[integrated.markers$avg_logFC>0,]
 #save
 fwrite(positive_markers, file="seurat-positive_markers.txt")
+
+#read data if needed
+#positive_markers= read.table("/Users/jason/Documents/git_repos/Diversifying-the-pipeline-for-identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-sing/cluster_annotation/seurat-positive_markers.txt", sep = ",", header=TRUE)
 ```
 
 
@@ -100,8 +104,9 @@ hmatch=arrange(hmatch,cluster, p_val_adj)
 
 ```
 
+1,2,5, 7, 9, 10, 11 categories are part of cancer stem cell
 
-
+0,3,4,6,8
 ```{r adding in info from single cell marker dataset}
 sc_match=sapply(unique(positive_markers$gene),
        FUN = function(marker)
@@ -116,6 +121,7 @@ View(hmatch[,rel_col])
 #hdt=as.data.table(hmatch)
 
 #View( hmatch[,by= cluster]   )
+
 
 ```
 
@@ -151,10 +157,179 @@ abcg2? cxcr4?
 11)
 
 
+##
 
-## Cluster annotation using Gene set ORA
 
-You may need to map symbols from to entrez id for goana
+## Cluster annotation using Gene set analysis 
+AUCell
+https://bioconductor.org/packages/devel/bioc/vignettes/AUCell/inst/doc/AUCell.html#gene-sets
+
+
+msigdb terms weren't very relevant
+```{r download msigdb for gene sets}
+#require(msigdbr)
+#msigdbr_show_species()
+m_df<- msigdbr(species = "Homo sapiens", category = "C7")
+
+
+#divide table into list as defined by gene set
+fgsea_sets<- m_df %>% split(x = .$gene_symbol, f = .$gs_name)
+
+```
+
+
+GENE ontology term loading
+```{r download GO for gene sets and convert to symbols, message=FALSE, warning=FALSE}
+
+require(pathview) #convert entrez gene to symbol
+require(gage)
+
+#gene sets are by default entrez id
+go_gsets=go.gsets(species = "human", pkg.name=NULL, id.type = "eg", keep.evidence=FALSE)
+
+#convert to symbols
+
+require(future.apply)
+plan("multiprocess", workers = detectCores())
+#parallelize this
+go_sym =future_lapply(go_gsets$go.sets, function(x){
+  syms=eg2id(x, org="Hs", category="symbol")
+  #syms will be a table with 2 columns ID & symbol, you just want the symbol
+  return(syms[,2])
+  
+})
+#go_sym will have 22,746 terms
+
+remove(go_gsets)
+```
+
+
+```{r loading downsampled data aucell}
+library(GSEABase)
+library(AUCell)
+require(Seurat)
+
+#read in donors.integrated or down-sampled data
+integrated.small=readRDS("/Users/jason/Documents/git_repos/Diversifying-the-pipeline-for-identifying-bulk-RNA-seq-derived-biomarkers-of-cancer-risk-within-sing/seurat-integrated-downsampled_100.rds")
+
+
+exprMatrix=as.matrix(GetAssayData(integrated.small)) #extract expression matrix
+
+umap_coord=Embeddings(integrated.small[["umap"]]) #get umap coordinates for downstream plotting
+
+```
+
+```{r remove gene sets with fewer than 20% genes needed for AUCell_calcAUC}
+
+scgenes=rownames(exprMatrix)
+
+go_satisf=future_lapply( go_sym, function(x){
+if ( sum(x %in% scgenes) > 0.2*length(x)){
+  return(x)
+  } else {return(NULL)}
+  })
+go_satisf=Filter(Negate(is.null), go_satisf) #remove null vectors
+```
+
+
+
+```{r AUCell gene set analysis, message=FALSE, warning=FALSE}
+#require(doMC)
+cells_rankings <- AUCell_buildRankings(exprMatrix, nCores=6, plotStats=TRUE)
+
+#change this to parallel
+cells_AUC= AUCell_calcAUC(go_satisf, cells_rankings)
+```
+
+```{r AUCell assignment}
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, plotHist=FALSE, assign=TRUE, nCores=5,verbose=FALSE) 
+saveRDS(cells_assignment, "cells_assignment.rds")
+
+#cells_assignment=readRDS("cells_assignment.rds")
+```
+
+```{r}
+#extract assignments
+cellsAssigned <- lapply(cells_assignment, function(x) x$assignment)
+assignmentTable <- reshape2::melt(cellsAssigned, value.name="cell")
+
+assignmentMat <- table(assignmentTable[,2], assignmentTable[,"cell"])
+#number of cells assigned to each geneset
+gs_total=rowSums(assignmentMat) %>% sort(decreasing = TRUE)
+
+#find top10 genesets with greatest # of cells assigned
+
+
+
+#condense cells in the same geneset
+#rows= genesets, columns= cells, binary assignment to a geneset, you may have more than 1 geneset per cell (and sometimes 0)
+assignmentMat <- table(assignmentTable[,2], assignmentTable[,"cell"])
+miniAssigMat <- assignmentMat[1:50,sample(1:ncol(assignmentMat),10)] #100 random cells
+
+require(NMF)
+aheatmap(miniAssigMat, scale="none", color="black", legend=FALSE)
+#cells (bottom), gene set(right)
+
+
+```
+
+
+
+
+```{r plot thresholded values}
+interesting_cat=c(
+"GO:0072606 interleukin-8 secretion",
+"GO:0002369 T cell cytokine production",
+"GO:0002477 antigen processing and presentation of exogenous peptide antigen via MHC class Ib",
+"GO:2000977 regulation of forebrain neuron differentiation",
+"GO:0001974 blood vessel remodeling",
+"GO:0072091 regulation of stem cell proliferation"
+)
+
+selectedThresholds <- getThresholdSelected(cells_assignment) #gets AUC thresholds for each genes set (593)
+selectedThresholds=selectedThresholds[interesting_cat] #only use thresholds of selected gene sets
+
+
+par(mfrow=c(3,2)) # Splits the plot 
+for(geneSetName in names(selectedThresholds))
+{
+  nBreaks <- 5 # Number of levels in the color palettes
+  # Color palette for the cells that do not pass the threshold
+  colorPal_Neg <- grDevices::colorRampPalette(c("black","blue", "skyblue"))(nBreaks)
+  # Color palette for the cells that pass the threshold
+  colorPal_Pos <- grDevices::colorRampPalette(c("pink", "magenta", "red"))(nBreaks)
+  
+  # Split cells according to their AUC value for the gene set
+  passThreshold <- getAUC(cells_AUC)[geneSetName,] >  selectedThresholds[geneSetName]
+  if(sum(passThreshold) >0 )
+  {
+    aucSplit <- split(getAUC(cells_AUC)[geneSetName,], passThreshold)
+    
+    # Assign cell color
+    cellColor <- c(setNames(colorPal_Neg[cut(aucSplit[[1]], breaks=nBreaks)], names(aucSplit[[1]])), 
+    setNames(colorPal_Pos[cut(aucSplit[[2]], breaks=nBreaks)], names(aucSplit[[2]])))
+    
+    # Plot
+    plot(umap_coord, main=geneSetName,
+    sub="Pink/red cells pass the threshold",
+    col=cellColor[rownames(umap_coord)], pch=16) 
+  }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+You may need to map symbols to entrez id for goana
 ```{r mapping symbols to entrez for goana}
 require(org.Hs.eg.db)
 #keytypes(org.Hs.eg.db) #prints fields available for matching
@@ -224,26 +399,4 @@ panglao=read.csv("panglao_output_top1gene.tsv",sep="\t")
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-## Alternative to CellMarker database
-Use this package to access Cellmarker and Panglao db
-
-https://cran.r-project.org/web/packages/scMappR/scMappR.pdf
-```{r scmappr}
-#GSVA dependency may need to be installed separately
-require(scMappR)
-
-
-internal <- tissue_scMappR_custom(genes,Signature,output_directory = "scMappR_Test_custom", toSave = TRUE)
-```
 
